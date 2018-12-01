@@ -35,6 +35,35 @@ public class ChatManagerAndChatConcurrencyTest {
 	}
 
 	@Test
+	public void givenOneChatRegisteredInManager_whenRemovingItConcurrently_thenNoExceptionsThrown() throws Throwable {
+		int numberOfConcurrentRemovals = 50;
+
+		String chatName = "chat to remove";
+		manager.newChat(chatName, 5, TimeUnit.SECONDS);
+
+		ExecutorService executor =
+				Executors.newFixedThreadPool(10);
+
+		CompletionService<Void> completionService =
+				new ExecutorCompletionService<>(executor);
+
+		for (int i = 0; i < numberOfConcurrentRemovals; i++) {
+			completionService.submit(()-> {
+				manager.closeChat(new Chat(manager, chatName));
+				return null;
+			});
+		}
+		for (int i = 0; i < numberOfConcurrentRemovals; i++) {
+			try {
+				completionService.take().get();
+			} catch (ExecutionException e) {
+				throw e.getCause();
+			}
+		}
+		verify(spyUser, times(1)).chatClosed(any());
+	}
+
+	@Test
 	public void givenNUsersOperatingConcurrently_whenEachOneRegistersInMChats_thenNoExceptionsThrown() throws Throwable {
 		int numberOfUsers = 10;
 		int numberOfChats = 5;
