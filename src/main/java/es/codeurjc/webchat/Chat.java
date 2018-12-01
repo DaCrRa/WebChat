@@ -2,13 +2,13 @@ package es.codeurjc.webchat;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 public class Chat {
 
 	private String name;
-	private Map<String, User> users = new HashMap<>();
+	private ConcurrentMap<String, User> users = new ConcurrentHashMap<String, User>();
 
 	private ChatManager chatManager;
 
