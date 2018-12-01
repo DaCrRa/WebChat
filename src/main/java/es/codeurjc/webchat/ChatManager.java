@@ -45,13 +45,10 @@ public class ChatManager {
 
 	public void closeChat(Chat chat) {
 		Chat removedChat = chats.remove(chat.getName());
-		if (removedChat == null) {
-			throw new IllegalArgumentException("Trying to remove an unknown chat with name \'"
-					+ chat.getName() + "\'");
-		}
-
-		for(User user : users.values()){
-			user.chatClosed(removedChat);
+		if (removedChat != null) {
+			for(User user : users.values()) {
+				user.chatClosed(removedChat);
+			}
 		}
 	}
 
