@@ -62,12 +62,7 @@ public class ChatManagerAndChatConcurrencyTest {
 	}
 
 	private Void registerUserinMChats(String userName, int m) throws InterruptedException, TimeoutException {
-		TestUser user = new TestUser(userName) {
-			@Override
-			public void newChat(Chat chat) {
-				System.out.println("User: " + userName + "  New chat " + chat.getName());
-			}
-		};
+		TestUser user = new TestUser(userName);
 		manager.newUser(user);
 		for (int i = 0; i < m; i++) {
 			Chat chat = manager.newChat("chat " + i, 5, TimeUnit.SECONDS);

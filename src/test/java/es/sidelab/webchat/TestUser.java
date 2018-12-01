@@ -22,27 +22,27 @@ public class TestUser implements User {
 
 	@Override
 	public void newChat(Chat chat) {
-		System.out.println("New chat " + chat.getName());
+		System.out.println(this + ": New chat " + chat.getName());
 	}
 
 	@Override
 	public void chatClosed(Chat chat) {
-		System.out.println("Chat " + chat.getName() + " closed ");
+		System.out.println(this + ": Chat " + chat.getName() + " closed ");
 	}
 
 	@Override
 	public void newUserInChat(Chat chat, User user) {
-		System.out.println("New user " + user.getName() + " in chat " + chat.getName());
+		System.out.println(this + ": New user " + user.getName() + " in chat " + chat.getName());
 	}
 
 	@Override
 	public void userExitedFromChat(Chat chat, User user) {
-		System.out.println("User " + user.getName() + " exited from chat " + chat.getName());
+		System.out.println(this + ": User " + user.getName() + " exited from chat " + chat.getName());
 	}
 
 	@Override
 	public void newMessage(Chat chat, User user, String message) {
-		System.out.println("New message '" + message + "' from user " + user.getName()
+		System.out.println(this + ": New message '" + message + "' from user " + user.getName()
 				+ " in chat " + chat.getName());
 	}
 
