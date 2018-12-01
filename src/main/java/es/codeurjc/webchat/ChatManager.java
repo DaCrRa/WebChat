@@ -2,15 +2,15 @@ package es.codeurjc.webchat;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 public class ChatManager {
 
-	private Map<String, Chat> chats = new HashMap<>();
-	private Map<String, User> users = new HashMap<>();
+	private ConcurrentMap<String, Chat> chats = new ConcurrentHashMap<>();
+	private ConcurrentMap<String, User> users = new ConcurrentHashMap<>();
 	private int maxChats;
 
 	public ChatManager(int maxChats) {
@@ -34,18 +34,13 @@ public class ChatManager {
 			throw new TimeoutException("There is no enought capacity to create a new chat");
 		}
 
-		if(chats.containsKey(name)){
-			return chats.get(name);
-		} else {
+		return chats.computeIfAbsent(name, n -> {
 			Chat newChat = new Chat(this, name);
-			chats.put(name, newChat);
-			
-			for(User user : users.values()){
+			for(User user : users.values()) {
 				user.newChat(newChat);
 			}
-
 			return newChat;
-		}
+		});
 	}
 
 	public void closeChat(Chat chat) {
