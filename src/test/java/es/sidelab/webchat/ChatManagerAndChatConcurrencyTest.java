@@ -39,7 +39,7 @@ public class ChatManagerAndChatConcurrencyTest {
 		int numberOfConcurrentRemovals = 50;
 
 		String chatName = "chat to remove";
-		manager.newChat(chatName, 5, TimeUnit.SECONDS);
+		Chat chat = manager.newChat(chatName, 5, TimeUnit.SECONDS);
 
 		ExecutorService executor =
 				Executors.newFixedThreadPool(10);
@@ -49,10 +49,11 @@ public class ChatManagerAndChatConcurrencyTest {
 
 		for (int i = 0; i < numberOfConcurrentRemovals; i++) {
 			completionService.submit(()-> {
-				manager.closeChat(new Chat(manager, chatName));
+				manager.closeChat(chat);
 				return null;
 			});
 		}
+
 		for (int i = 0; i < numberOfConcurrentRemovals; i++) {
 			try {
 				completionService.take().get();
@@ -60,6 +61,7 @@ public class ChatManagerAndChatConcurrencyTest {
 				throw e.getCause();
 			}
 		}
+		verify(spyUser, times(1)).chatClosed(chat);
 		verify(spyUser, times(1)).chatClosed(any());
 	}
 
