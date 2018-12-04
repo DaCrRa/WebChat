@@ -71,6 +71,27 @@ public class ChatUserCallbacksTest {
 	}
 
 	@Test
+	public void givenChatManagerWithNUsersRegistered_whenNewChatCreatedWithSameNameAsPreexistent_thenUsersAreNotNotified() throws InterruptedException, TimeoutException {
+		int numberOfUsers = 2;
+
+		// Given
+		User[] spyUsers = new User[numberOfUsers];
+		Arrays.parallelSetAll(spyUsers, i -> {
+			return spy(new TestUser("User " + i));
+		});
+
+		Stream.of(spyUsers).forEach(user -> manager.newUser(user));
+
+		// When
+		Chat createdChat = manager.newChat("new chat", 5, TimeUnit.SECONDS);
+
+		// Then
+		Stream.of(spyUsers).forEach(spy -> {
+			verify(spy, never()).newChat(createdChat);
+		});
+	}
+
+	@Test
 	public void givenChatManagerWithNUsersRegisteredAndOneChat_whenChatRemoved_thenAllUsersAreNotified() throws InterruptedException, TimeoutException {
 		int numberOfUsers = 2;
 
