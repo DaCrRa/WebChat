@@ -1,5 +1,6 @@
 package es.sidelab.webchat;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -19,13 +20,22 @@ import es.codeurjc.webchat.Chat;
 import es.codeurjc.webchat.ChatManager;
 import es.codeurjc.webchat.User;
 
-public class ChatOperationsTest {
+public class ChatUserCallbacksTest {
 
 	ChatManager manager;
+	Chat aChat;
+	User actor;
 
 	@Before
-	public void createChatManager() {
+	public void createChatManagerChatAndActor() throws InterruptedException, TimeoutException {
 		manager = new ChatManager(50);
+		aChat = manager.newChat("new chat", 5, TimeUnit.SECONDS);
+		actor = spy(new TestUser("actor"));
+		aChat.addUser(actor);
+	}
+
+	private void failIfCountDownLatchDoesntGetToZeroWithin(long timeout, TimeUnit unit, CountDownLatch latch) throws InterruptedException {
+		assertTrue("Timed out waiting for threads to do their job", latch.await(timeout, unit));
 	}
 
 	@Test
@@ -49,13 +59,13 @@ public class ChatOperationsTest {
 		Stream.of(spyUsers).forEach(user -> manager.newUser(user));
 
 		// When
-		Chat aChat = manager.newChat("new chat", 5, TimeUnit.SECONDS);
-
-		countDownLatch.await(10, TimeUnit.SECONDS);
+		Chat createdChat = manager.newChat("chat created", 5, TimeUnit.SECONDS);
 
 		// Then
+		failIfCountDownLatchDoesntGetToZeroWithin(10, TimeUnit.SECONDS, countDownLatch);
+
 		Stream.of(spyUsers).forEach(spy -> {
-			verify(spy, times(1)).newChat(aChat);
+			verify(spy, times(1)).newChat(createdChat);
 			verify(spy, times(1)).newChat(any());
 		});
 	}
@@ -79,14 +89,13 @@ public class ChatOperationsTest {
 		});
 
 		Stream.of(spyUsers).forEach(user -> manager.newUser(user));
-		Chat aChat = manager.newChat("new chat", 5, TimeUnit.SECONDS);
 
 		// When
 		manager.closeChat(aChat);
 
-		countDownLatch.await(10, TimeUnit.SECONDS);
-
 		// Then
+		failIfCountDownLatchDoesntGetToZeroWithin(10, TimeUnit.SECONDS, countDownLatch);
+
 		Stream.of(spyUsers).forEach(spy -> {
 			verify(spy, times(1)).chatClosed(aChat);
 			verify(spy, times(1)).chatClosed(any());
@@ -111,16 +120,15 @@ public class ChatOperationsTest {
 			});
 		});
 
-		Chat aChat = manager.newChat("new chat", 5, TimeUnit.SECONDS);
 		Stream.of(spyUsers).forEach(user -> aChat.addUser(user));
 
 		// When
 		User newUser = spy(new TestUser("the new user"));
 		aChat.addUser(newUser);
 
-		countDownLatch.await(10, TimeUnit.SECONDS);
-
 		// Then
+		failIfCountDownLatchDoesntGetToZeroWithin(10, TimeUnit.SECONDS, countDownLatch);
+
 		Stream.of(spyUsers).forEach(spy -> {
 			verify(spy, times(1)).newUserInChat(aChat, newUser);
 		});
@@ -146,23 +154,19 @@ public class ChatOperationsTest {
 			});
 		});
 
-		Chat aChat = manager.newChat("new chat", 5, TimeUnit.SECONDS);
 		Stream.of(spyUsers).forEach(user -> aChat.addUser(user));
 
-		User newUser = spy(new TestUser("the new user"));
-		aChat.addUser(newUser);
-
 		// When
-		aChat.removeUser(newUser);
-
-		countDownLatch.await(10, TimeUnit.SECONDS);
+		aChat.removeUser(actor);
 
 		// Then
+		failIfCountDownLatchDoesntGetToZeroWithin(10, TimeUnit.SECONDS, countDownLatch);
+
 		Stream.of(spyUsers).forEach(spy -> {
-			verify(spy, times(1)).userExitedFromChat(aChat, newUser);
+			verify(spy, times(1)).userExitedFromChat(aChat, actor);
 		});
 
-		verify(newUser, never()).userExitedFromChat(any(), any());
+		verify(actor, never()).userExitedFromChat(any(), any());
 	}
 
 	@Test
@@ -183,20 +187,17 @@ public class ChatOperationsTest {
 			});
 		});
 
-		Chat aChat = manager.newChat("new chat", 5, TimeUnit.SECONDS);
 		Stream.of(spyUsers).forEach(user -> aChat.addUser(user));
 
-		User newUser = spy(new TestUser("the new user"));
-		aChat.addUser(newUser);
-
 		// When
-		aChat.sendMessage(newUser, "message sent by newUser");
-
-		countDownLatch.await(10, TimeUnit.SECONDS);
+		aChat.sendMessage(actor, "message sent by the actor");
 
 		// Then
+		failIfCountDownLatchDoesntGetToZeroWithin(10, TimeUnit.SECONDS, countDownLatch);
+
 		Stream.of(spyUsers).forEach(spy -> {
-			verify(spy, times(1)).newMessage(aChat, newUser, "message sent by newUser");
+			verify(spy, times(1)).newMessage(aChat, actor, "message sent by the actor");
+			verify(spy, times(1)).newMessage(any(), any(), any());
 		});
 	}
 
@@ -218,26 +219,22 @@ public class ChatOperationsTest {
 			});
 		});
 
-		Chat aChat = manager.newChat("new chat", 5, TimeUnit.SECONDS);
 		Stream.of(spyUsers).forEach(user -> aChat.addUser(user));
 
 		Chat otherChat = manager.newChat("new chat", 5, TimeUnit.SECONDS);
 		Stream.of(spyUsers).forEach(user -> otherChat.addUser(user));
-
-		User newUser = spy(new TestUser("the new user"));
-		aChat.addUser(newUser);
-		otherChat.addUser(newUser);
+		otherChat.addUser(actor);
 
 		// When
-		aChat.sendMessage(newUser, "message sent to a chat");
-		otherChat.sendMessage(newUser, "message sent to the other chat");
-
-		countDownLatch.await(10, TimeUnit.SECONDS);
+		aChat.sendMessage(actor, "message sent to a chat");
+		otherChat.sendMessage(actor, "message sent to the other chat");
 
 		// Then
+		failIfCountDownLatchDoesntGetToZeroWithin(10, TimeUnit.SECONDS, countDownLatch);
+
 		Stream.of(spyUsers).forEach(spy -> {
-			verify(spy, times(1)).newMessage(aChat, newUser, "message sent to a chat");
-			verify(spy, times(1)).newMessage(otherChat, newUser, "message sent to the other chat");
+			verify(spy, times(1)).newMessage(aChat, actor, "message sent to a chat");
+			verify(spy, times(1)).newMessage(otherChat, actor, "message sent to the other chat");
 		});
 	}
 
