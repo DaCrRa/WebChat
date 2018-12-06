@@ -1,5 +1,6 @@
 package es.sidelab.webchat;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -60,7 +61,8 @@ public class ChatOperationsTest {
 	
 	
     @Test
-    public void givenChatManagerWithNUsersRegistered_whenOneUserHasConnectionIssue_thenAllUsersAreNotified() throws InterruptedException, TimeoutException {
+    public void givenChatManagerWithNUsersRegistered_whenOneUserHasConnectionIssue_thenAllUsersAreNotified() 
+            throws InterruptedException, TimeoutException {
         int numberOfUsers = 4;
 
         CountDownLatch countDownLatch = new CountDownLatch(numberOfUsers);
@@ -77,7 +79,11 @@ public class ChatOperationsTest {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    super.newMessage(chat, user, message);
+                    try {
+                        super.newMessage(chat, user, message);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
                 }
             });
         });
@@ -96,8 +102,62 @@ public class ChatOperationsTest {
                 
         countDownLatch.await(1, TimeUnit.SECONDS);
         
-        Stream.of(spyUsers).forEach(spy -> {
-            verify(spy, times(1)).newMessage(any(), any(), any());
+        Stream.of(spyUsers).skip(1).forEach(spy -> {
+            try {
+                verify(spy, times(1)).newMessage(any(), any(), any());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         });
+    }
+    
+    
+    @Test
+    public void givenChatManagerWithNUsersRegistered_whenOneUserHasConnectionIssue_thenAllUsersAreNotifiedInSortOrder() 
+            throws InterruptedException, TimeoutException {
+        
+        User producer = new TestUser("producer"){
+            @Override
+            public void newMessage(Chat chat, User user, String message) {
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    super.newMessage(chat, user, message);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        
+        User consumer = new TestUser("consumer"){
+            int messageId = 0;
+            
+            @Override
+            public void newMessage(Chat chat, User user, String message) {
+                if ((Integer.parseInt(message))== messageId) {
+                    messageId++;
+                } else {
+                    this.setIsSorted(false);
+                }
+                super.newMessage(chat, user, message);
+            }
+        };
+        
+        Chat chat = new Chat(this.manager, "New chat");
+        chat.addUser(producer);
+        chat.addUser(consumer);
+                
+        for (int i=0; i<5; i++) {
+            try {
+                chat.sendMessage(producer, String.valueOf(i));
+            } catch (Throwable e) {
+                e.printStackTrace();
+            }
+        }
+        
+        assertEquals(((TestUser) consumer).getIsSorted(), true);
     }
 }

@@ -6,14 +6,25 @@ import es.codeurjc.webchat.User;
 public class TestUser implements User {
 
 	public String name;
+	
+	private boolean isSorted;
 
 	public TestUser(String name) {
 		this.name = name;
+		this.isSorted = true;
 	}
 
 	@Override
 	public String getName() {
-		return name;
+		return this.name;
+	}
+	
+	public boolean getIsSorted() {
+	    return this.isSorted;
+	}
+	
+	public void setIsSorted(boolean isOrdered) {
+	    this.isSorted = isOrdered;
 	}
 	
 	public String getColor(){

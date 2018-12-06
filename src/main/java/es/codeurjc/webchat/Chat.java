@@ -64,13 +64,16 @@ public class Chat {
 	public void sendMessage(User user, String message) throws Throwable {
 		
 		for (User u : this.users.values()) {
-			completionService.submit(() -> {
-				u.newMessage(this, user, message);
-				return null;
-			});
+		    
+		    if (!u.equals(user)) {
+		        completionService.submit(() -> {
+				    u.newMessage(this, user, message);
+				    return null;
+			    });
+		    }
 		}
 
-		for (int i=0; i<this.users.size(); i++) {
+		for (int i=0; i<this.users.size()-1; i++) {
 			try {
 				this.completionService.take().get();
 			} catch (ExecutionException e) {
