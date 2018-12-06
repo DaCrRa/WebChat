@@ -2,13 +2,28 @@ package es.codeurjc.webchat;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class Chat {
 
+	private static final int NUM_THREADS = 10; 
+
 	private String name;
-	private ConcurrentMap<String, User> users = new ConcurrentHashMap<String, User>();
+
+	private ConcurrentMap<String, User> users = 
+			new ConcurrentHashMap<String, User>();
+	
+	ExecutorService executor =
+			Executors.newFixedThreadPool(NUM_THREADS);
+
+	CompletionService<Void> completionService =
+			new ExecutorCompletionService<>(executor);
 
 	private ChatManager chatManager;
 
@@ -18,12 +33,13 @@ public class Chat {
 	}
 
 	public String getName() {
-		return name;
+		return this.name;
 	}
 
 	public void addUser(User user) {
-		users.put(user.getName(), user);
-		for(User u : users.values()){
+		
+		this.users.put(user.getName(), user);
+		for(User u : this.users.values()){
 			if (u != user) {
 				u.newUserInChat(this, user);
 			}
@@ -31,8 +47,8 @@ public class Chat {
 	}
 
 	public void removeUser(User user) {
-		users.remove(user.getName());
-		for(User u : users.values()){
+		this.users.remove(user.getName());
+		for(User u : this.users.values()){
 			u.userExitedFromChat(this, user);
 		}
 	}
@@ -42,12 +58,24 @@ public class Chat {
 	}
 
 	public User getUser(String name) {
-		return users.get(name);
+		return this.users.get(name);
 	}
 
-	public void sendMessage(User user, String message) {
-		for(User u : users.values()){
-			u.newMessage(this, user, message);
+	public void sendMessage(User user, String message) throws Throwable {
+		
+		for (User u : this.users.values()) {
+			completionService.submit(() -> {
+				u.newMessage(this, user, message);
+				return null;
+			});
+		}
+
+		for (int i=0; i<this.users.size(); i++) {
+			try {
+				this.completionService.take().get();
+			} catch (ExecutionException e) {
+				throw e.getCause();
+			}
 		}
 	}
 

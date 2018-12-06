@@ -38,11 +38,15 @@ public class ChatHandler extends TextWebSocketHandler {
 		if (jsonMsg.hasNonNull("chat")) {
 			newUser(session, jsonMsg);
 		} else {
-			newMessage(session, jsonMsg);
+			try {
+				newMessage(session, jsonMsg);
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
 		}
 	}
 
-	private void newMessage(WebSocketSession session, JsonNode jsonMsg) {
+	private void newMessage(WebSocketSession session, JsonNode jsonMsg) throws Throwable {
 		User user = (User) session.getAttributes().get("user");
 		Chat chat = (Chat) session.getAttributes().get("chat");
 
