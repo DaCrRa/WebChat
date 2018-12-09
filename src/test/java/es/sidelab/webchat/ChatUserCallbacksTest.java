@@ -35,12 +35,14 @@ public class ChatUserCallbacksTest {
 		aChat.addUser(actor);
 	}
 
-	private void failIfCountDownLatchDoesntGetToZeroWithin(long timeout, TimeUnit unit, CountDownLatch latch) throws InterruptedException {
+	private void failIfCountDownLatchDoesntGetToZeroWithin(long timeout, TimeUnit unit, CountDownLatch latch)
+			throws InterruptedException {
 		assertTrue("Timed out waiting for threads to do their job", latch.await(timeout, unit));
 	}
 
 	@Test
-	public void givenChatManagerWithNUsersRegistered_whenNewChatCreated_thenAllUsersAreNotified() throws InterruptedException, TimeoutException {
+	public void givenChatManagerWithNUsersRegistered_whenNewChatCreated_thenAllUsersAreNotified()
+			throws InterruptedException, TimeoutException {
 		int numberOfUsers = 2;
 
 		CountDownLatch countDownLatch = new CountDownLatch(numberOfUsers);
@@ -70,112 +72,111 @@ public class ChatUserCallbacksTest {
 			verify(spy, times(1)).newChat(any());
 		});
 	}
-	
-
-    @Test
-    public void givenChatManagerWithNUsersRegistered_whenOneUserHasConnectionIssue_thenAllUsersAreNotified() 
-            throws InterruptedException, TimeoutException {
-        int numberOfUsers = 4;
-
-        CountDownLatch countDownLatch = new CountDownLatch(numberOfUsers);
-
-        User[] spyUsers = new User[numberOfUsers];
-        
-        Arrays.parallelSetAll(spyUsers, i -> {
-            return spy(new TestUser("User " + i) {
-                @Override
-                public void newMessage(Chat chat, User user, String message) {
-                    countDownLatch.countDown();
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                    try {
-                        super.newMessage(chat, user, message);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-        });
-            
-        Chat chat = new Chat(this.manager, "New chat");
-        Stream.of(spyUsers).forEach(user -> chat.addUser(user));
-        
-        try {
-            if (Stream.of(spyUsers).findFirst() != null) {
-                User user = Stream.of(spyUsers).findFirst().get();
-                chat.sendMessage(user,  "test");
-            }
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-                
-        countDownLatch.await(1, TimeUnit.SECONDS);
-        
-        Stream.of(spyUsers).skip(1).forEach(spy -> {
-            try {
-                verify(spy, times(1)).newMessage(any(), any(), any());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-    }
-    
-    
-    @Test
-    public void givenChatManagerWithNUsersRegistered_whenOneUserHasConnectionIssue_thenAllUsersAreNotifiedInSortOrder() 
-            throws InterruptedException, TimeoutException {
-        
-        User producer = new TestUser("producer"){
-            @Override
-            public void newMessage(Chat chat, User user, String message) {
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                try {
-                    super.newMessage(chat, user, message);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        };
-        
-        User consumer = new TestUser("consumer"){
-            int messageId = 0;
-            
-            @Override
-            public void newMessage(Chat chat, User user, String message) {
-                if ((Integer.parseInt(message))== messageId) {
-                    messageId++;
-                } else {
-                    this.setIsSorted(false);
-                }
-                super.newMessage(chat, user, message);
-            }
-        };
-        
-        Chat chat = new Chat(this.manager, "New chat");
-        chat.addUser(producer);
-        chat.addUser(consumer);
-                
-        for (int i=0; i<5; i++) {
-            try {
-                chat.sendMessage(producer, String.valueOf(i));
-            } catch (Throwable e) {
-                e.printStackTrace();
-            }
-        }
-        
-        assertEquals(((TestUser) consumer).getIsSorted(), true);
-    }
-	
 
 	@Test
-	public void givenChatManagerWithNUsersRegistered_whenNewChatCreatedWithSameNameAsPreexistent_thenUsersAreNotNotified() throws InterruptedException, TimeoutException {
+	public void givenChatManagerWithNUsersRegistered_whenOneUserHasConnectionIssue_thenAllUsersAreNotified()
+			throws Throwable {
+		int numberOfUsers = 4;
+
+		CountDownLatch countDownLatch = new CountDownLatch(numberOfUsers);
+
+		User[] spyUsers = new User[numberOfUsers];
+
+		Arrays.parallelSetAll(spyUsers, i -> {
+			return spy(new TestUser("User " + i) {
+				@Override
+				public void newMessage(Chat chat, User user, String message) {
+					countDownLatch.countDown();
+					try {
+						Thread.sleep(1000);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					try {
+						super.newMessage(chat, user, message);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+			});
+		});
+
+		Chat chat = new Chat(this.manager, "New chat");
+		Stream.of(spyUsers).forEach(user -> chat.addUser(user));
+
+		try {
+			if (Stream.of(spyUsers).findFirst() != null) {
+				User user = Stream.of(spyUsers).findFirst().get();
+				chat.sendMessage(user,  "test");
+			}
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
+
+		countDownLatch.await(1, TimeUnit.SECONDS);
+
+		Stream.of(spyUsers).skip(1).forEach(spy -> {
+			try {
+				verify(spy, times(1)).newMessage(any(), any(), any());
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+	}
+
+	@Test
+	public void givenChatManagerWithNUsersRegistered_whenOneUserHasConnectionIssue_thenAllUsersAreNotifiedInSortOrder()
+			throws InterruptedException, TimeoutException {
+
+		User producer = new TestUser("producer") {
+			@Override
+			public void newMessage(Chat chat, User user, String message) {
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				try {
+					super.newMessage(chat, user, message);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		};
+
+		User consumer = new TestUser("consumer"){
+			int messageId = 0;
+
+			@Override
+			public void newMessage(Chat chat, User user, String message) {
+				if ((Integer.parseInt(message))== messageId) {
+					messageId++;
+				} else {
+					this.setIsSorted(false);
+				}
+				super.newMessage(chat, user, message);
+			}
+		};
+
+		Chat chat = new Chat(this.manager, "New chat");
+		chat.addUser(producer);
+		chat.addUser(consumer);
+
+		for (int i=0; i<5; i++) {
+			try {
+				chat.sendMessage(producer, String.valueOf(i));
+			} catch (Throwable e) {
+				e.printStackTrace();
+			}
+		}
+
+		assertEquals(((TestUser) consumer).getIsSorted(), true);
+		verify(consumer, times(numberOfMessages)).newMessage(eq(chat), eq(producer), any());
+	}
+
+	@Test
+	public void givenChatManagerWithNUsersRegistered_whenNewChatCreatedWithSameNameAsPreexistent_thenUsersAreNotNotified()
+			throws InterruptedException, TimeoutException {
 		int numberOfUsers = 2;
 
 		// Given
@@ -196,7 +197,8 @@ public class ChatUserCallbacksTest {
 	}
 
 	@Test
-	public void givenChatManagerWithNUsersRegisteredAndOneChat_whenChatRemoved_thenAllUsersAreNotified() throws InterruptedException, TimeoutException {
+	public void givenChatManagerWithNUsersRegisteredAndOneChat_whenChatRemoved_thenAllUsersAreNotified()
+			throws InterruptedException, TimeoutException {
 		int numberOfUsers = 2;
 
 		CountDownLatch countDownLatch = new CountDownLatch(numberOfUsers);
@@ -228,7 +230,8 @@ public class ChatUserCallbacksTest {
 	}
 
 	@Test
-	public void givenChatWithNUsersRegistered_whenNewUserInChat_thenAllUsersAreNotified() throws InterruptedException, TimeoutException {
+	public void givenChatWithNUsersRegistered_whenNewUserInChat_thenAllUsersAreNotified()
+			throws InterruptedException, TimeoutException {
 		int numberOfUsers = 2;
 
 		CountDownLatch countDownLatch = new CountDownLatch(numberOfUsers);
@@ -262,7 +265,8 @@ public class ChatUserCallbacksTest {
 	}
 
 	@Test
-	public void givenChatWithNUsersRegistered_whenUserLeavesChat_thenAllUsersAreNotified() throws InterruptedException, TimeoutException {
+	public void givenChatWithNUsersRegistered_whenUserLeavesChat_thenAllUsersAreNotified()
+			throws InterruptedException, TimeoutException {
 		int numberOfUsers = 2;
 
 		CountDownLatch countDownLatch = new CountDownLatch(numberOfUsers);
@@ -295,7 +299,8 @@ public class ChatUserCallbacksTest {
 	}
 
 	@Test
-	public void givenChatWithNUsersRegistered_whenMessageOnTheChat_thenAllUsersGetMessage() throws InterruptedException, TimeoutException {
+	public void givenChatWithNUsersRegistered_whenMessageOnTheChat_thenAllUsersGetMessage()
+			throws InterruptedException, TimeoutException {
 		int numberOfUsers = 2;
 
 		CountDownLatch countDownLatch = new CountDownLatch(numberOfUsers);
@@ -316,10 +321,10 @@ public class ChatUserCallbacksTest {
 
 		// When
 		try {
-            aChat.sendMessage(actor, "message sent by the actor");
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
+			aChat.sendMessage(actor, "message sent by the actor");
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
 
 		// Then
 		failIfCountDownLatchDoesntGetToZeroWithin(10, TimeUnit.SECONDS, countDownLatch);
@@ -331,8 +336,9 @@ public class ChatUserCallbacksTest {
 	}
 
 	@Test
-	public void givenTwoChatsWithUsersRegisteredOnBoth_whenMessagesOnEachChat_thenTheyGetMessages() throws InterruptedException, TimeoutException {
-		int numberOfUsers= 2;
+	public void givenTwoChatsWithUsersRegisteredOnBoth_whenMessagesOnEachChat_thenTheyGetMessages()
+			throws InterruptedException, TimeoutException {
+		int numberOfUsers = 2;
 
 		CountDownLatch countDownLatch = new CountDownLatch(numberOfUsers * 2);
 
@@ -356,16 +362,16 @@ public class ChatUserCallbacksTest {
 
 		// When
 		try {
-            aChat.sendMessage(actor, "message sent to a chat");
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
-		
+			aChat.sendMessage(actor, "message sent to a chat");
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
+
 		try {
-            otherChat.sendMessage(actor, "message sent to the other chat");
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
+			otherChat.sendMessage(actor, "message sent to the other chat");
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
 
 		// Then
 		failIfCountDownLatchDoesntGetToZeroWithin(10, TimeUnit.SECONDS, countDownLatch);

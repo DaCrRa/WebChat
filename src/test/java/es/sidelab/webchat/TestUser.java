@@ -6,7 +6,7 @@ import es.codeurjc.webchat.User;
 public class TestUser implements User {
 
 	public String name;
-	
+
 	private boolean isSorted;
 
 	public TestUser(String name) {
@@ -18,16 +18,17 @@ public class TestUser implements User {
 	public String getName() {
 		return this.name;
 	}
-	
+
 	public boolean getIsSorted() {
-	    return this.isSorted;
+		return this.isSorted;
 	}
-	
+
 	public void setIsSorted(boolean isOrdered) {
-	    this.isSorted = isOrdered;
+		this.isSorted = isOrdered;
 	}
-	
-	public String getColor(){
+
+	@Override
+	public String getColor() {
 		return "007AFF";
 	}
 
@@ -53,12 +54,12 @@ public class TestUser implements User {
 
 	@Override
 	public void newMessage(Chat chat, User user, String message) {
-		System.out.println(this + ": New message '" + message + "' from user " + user.getName()
-				+ " in chat " + chat.getName());
+		System.out.println(
+				this + ": New message '" + message + "' from user " + user.getName() + " in chat " + chat.getName());
 	}
 
 	@Override
 	public String toString() {
 		return "User[" + name + "]";
-	}	
+	}
 }

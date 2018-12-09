@@ -18,9 +18,9 @@ public class App implements WebSocketConfigurer {
 
 	@Override
 	public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-		registry.addHandler(chatHandler(), "/chat");		
+		registry.addHandler(chatHandler(), "/chat");
 	}
-	
+
 	public static void main(String[] args) {
 		SpringApplication.run(App.class, args);
 	}

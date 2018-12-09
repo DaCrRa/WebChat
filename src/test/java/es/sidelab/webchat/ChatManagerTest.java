@@ -24,6 +24,7 @@ public class ChatManagerTest {
 		final String[] chatName = new String[1];
 
 		chatManager.newUser(new TestUser("user") {
+			@Override
 			public void newChat(Chat chat) {
 				chatName[0] = chat.getName();
 			}
@@ -33,8 +34,8 @@ public class ChatManagerTest {
 		chatManager.newChat("Chat", 5, TimeUnit.SECONDS);
 
 		// Comprobar que el chat recibido en el método 'newChat' se llama 'Chat'
-		assertTrue("The method 'newChat' should be invoked with 'Chat', but the value is "
-				+ chatName[0], Objects.equals(chatName[0], "Chat"));
+		assertTrue("The method 'newChat' should be invoked with 'Chat', but the value is " + chatName[0],
+				Objects.equals(chatName[0], "Chat"));
 	}
 
 	@Test

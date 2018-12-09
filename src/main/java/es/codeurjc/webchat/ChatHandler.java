@@ -17,9 +17,8 @@ public class ChatHandler extends TextWebSocketHandler {
 
 	private ChatManager chatManager = new ChatManager(10);
 
-	private String[] colors = { "007AFF", "FF7000", "15E25F", "CFC700", "CFC700",
-			"CF1100", "CF00BE", "F00" };
-	
+	private String[] colors = { "007AFF", "FF7000", "15E25F", "CFC700", "CFC700", "CF1100", "CF00BE", "F00" };
+
 	private volatile int colorIndex = 0;
 
 	@Override
@@ -28,8 +27,7 @@ public class ChatHandler extends TextWebSocketHandler {
 	}
 
 	@Override
-	protected void handleTextMessage(WebSocketSession session, TextMessage message)
-			throws Exception {
+	protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
 		System.out.println("Message received: " + message.getPayload());
 
 		String msg = message.getPayload();
@@ -53,16 +51,15 @@ public class ChatHandler extends TextWebSocketHandler {
 		chat.sendMessage(user, jsonMsg.get("message").asText());
 	}
 
-	private void newUser(WebSocketSession session, JsonNode jsonMsg)
-			throws InterruptedException, TimeoutException {
-		
+	private void newUser(WebSocketSession session, JsonNode jsonMsg) throws InterruptedException, TimeoutException {
+
 		String chatName = jsonMsg.get("chat").asText();
 		String userName = jsonMsg.get("user").asText();
 
 		WebSocketUser user = new WebSocketUser(session, userName, colors[colorIndex]);
-		colorIndex = (colorIndex+1) % colors.length;
-		
-		session.getAttributes().put("user", user);	
+		colorIndex = (colorIndex + 1) % colors.length;
+
+		session.getAttributes().put("user", user);
 
 		chatManager.newUser(user);
 		Chat chat = chatManager.newChat(chatName, 5, TimeUnit.SECONDS);
@@ -72,8 +69,7 @@ public class ChatHandler extends TextWebSocketHandler {
 	}
 
 	@Override
-	public void afterConnectionClosed(WebSocketSession session, CloseStatus status)
-			throws Exception {
+	public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
 
 		User user = (User) session.getAttributes().get("user");
 		Chat chat = (Chat) session.getAttributes().get("chat");

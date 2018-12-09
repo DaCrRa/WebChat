@@ -3,7 +3,7 @@ package es.codeurjc.webchat;
 public interface User {
 
 	public String getName();
-	
+
 	public String getColor();
 
 	public void newChat(Chat chat);
@@ -14,6 +14,6 @@ public interface User {
 
 	public void userExitedFromChat(Chat chat, User user);
 
-    public void newMessage(Chat chat, User user, String message);
+	public void newMessage(Chat chat, User user, String message);
 
 }

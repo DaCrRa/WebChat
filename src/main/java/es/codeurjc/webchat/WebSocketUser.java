@@ -64,8 +64,7 @@ public class WebSocketUser implements User {
 	public void userExitedFromChat(Chat chat, User user) {
 		ObjectNode msg = mapper.createObjectNode();
 		msg.put("type", "system");
-		msg.put("message", "User '" + user.getName() + "' exited from chat '" + chat.getName()
-				+ "'");
+		msg.put("message", "User '" + user.getName() + "' exited from chat '" + chat.getName() + "'");
 
 		send(msg);
 	}
