@@ -3,10 +3,11 @@ package es.sidelab.webchat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -104,19 +105,13 @@ public class ChatUserCallbacksTest {
 		Chat chat = new Chat(this.manager, "New chat");
 		Stream.of(spyUsers).forEach(user -> chat.addUser(user));
 
-		try {
-			if (Stream.of(spyUsers).findFirst() != null) {
-				User user = Stream.of(spyUsers).findFirst().get();
-				chat.sendMessage(user,  "test");
-			}
-		} catch (Throwable e) {
-			e.printStackTrace();
-		}
+		chat.sendMessage(actor, "test");
 
-		countDownLatch.await(1, TimeUnit.SECONDS);
+		failIfCountDownLatchDoesntGetToZeroWithin(5, TimeUnit.SECONDS, countDownLatch);
 
-		Stream.of(spyUsers).skip(1).forEach(spy -> {
+		Stream.of(spyUsers).forEach(spy -> {
 			try {
+				verify(spy, times(1)).newMessage(chat, actor, "test");
 				verify(spy, times(1)).newMessage(any(), any(), any());
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -144,25 +139,27 @@ public class ChatUserCallbacksTest {
 			}
 		};
 
-		User consumer = new TestUser("consumer"){
+		User consumer = spy(new TestUser("consumer") {
 			int messageId = 0;
 
 			@Override
 			public void newMessage(Chat chat, User user, String message) {
-				if ((Integer.parseInt(message))== messageId) {
+				if ((Integer.parseInt(message)) == messageId) {
 					messageId++;
 				} else {
 					this.setIsSorted(false);
 				}
 				super.newMessage(chat, user, message);
 			}
-		};
+		});
 
 		Chat chat = new Chat(this.manager, "New chat");
 		chat.addUser(producer);
 		chat.addUser(consumer);
 
-		for (int i=0; i<5; i++) {
+		int numberOfMessages = 5;
+
+		for (int i = 0; i < numberOfMessages; i++) {
 			try {
 				chat.sendMessage(producer, String.valueOf(i));
 			} catch (Throwable e) {
