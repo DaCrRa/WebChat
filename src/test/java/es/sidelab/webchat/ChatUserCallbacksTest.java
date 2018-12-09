@@ -379,4 +379,40 @@ public class ChatUserCallbacksTest {
 		});
 	}
 
+	@Test
+	public void givenChatWithUsersRegistered_whenMessageSentWhileUserLeaves_thenNoExceptionThrown() throws Throwable {
+		int numberOfUsers = 4;
+
+		CountDownLatch countDownLatch = new CountDownLatch(numberOfUsers);
+
+		// Given
+		User[] spyUsers = new User[numberOfUsers];
+		Arrays.parallelSetAll(spyUsers, i -> {
+			return spy(new TestUser("User " + i) {
+				@Override
+				public void newMessage(Chat chat, User user, String message) {
+					try {
+						Thread.sleep(1 * 1000 /* millis per second */);
+					} catch (InterruptedException e) {
+					}
+					super.newMessage(chat, user, message);
+					countDownLatch.countDown();
+				}
+			});
+		});
+
+		Stream.of(spyUsers).forEach(user -> aChat.addUser(user));
+
+		// When
+		aChat.sendMessage(actor, "message sent to a chat");
+		aChat.removeUser(actor);
+
+		// Then
+		failIfCountDownLatchDoesntGetToZeroWithin(10, TimeUnit.SECONDS, countDownLatch);
+
+		Stream.of(spyUsers).forEach(spy -> {
+			verify(spy, times(1)).newMessage(aChat, actor, "message sent to a chat");
+		});
+	}
+
 }
