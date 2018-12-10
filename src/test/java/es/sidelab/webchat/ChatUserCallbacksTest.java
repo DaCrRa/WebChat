@@ -1,6 +1,5 @@
 package es.sidelab.webchat;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -87,7 +86,6 @@ public class ChatUserCallbacksTest {
 			return spy(new TestUser("User " + i) {
 				@Override
 				public void newMessage(Chat chat, User user, String message) {
-					countDownLatch.countDown();
 					try {
 						Thread.sleep(1000);
 					} catch (InterruptedException e) {
@@ -98,6 +96,7 @@ public class ChatUserCallbacksTest {
 					} catch (Exception e) {
 						e.printStackTrace();
 					}
+					countDownLatch.countDown();
 				}
 			});
 		});
@@ -139,6 +138,9 @@ public class ChatUserCallbacksTest {
 			}
 		};
 
+		int numberOfMessages = 5;
+		CountDownLatch countDownLatch = new CountDownLatch(numberOfMessages);
+
 		User consumer = spy(new TestUser("consumer") {
 			int messageId = 0;
 
@@ -150,14 +152,13 @@ public class ChatUserCallbacksTest {
 					this.setIsSorted(false);
 				}
 				super.newMessage(chat, user, message);
+				countDownLatch.countDown();
 			}
 		});
 
 		Chat chat = new Chat(this.manager, "New chat");
 		chat.addUser(producer);
 		chat.addUser(consumer);
-
-		int numberOfMessages = 5;
 
 		for (int i = 0; i < numberOfMessages; i++) {
 			try {
@@ -167,7 +168,9 @@ public class ChatUserCallbacksTest {
 			}
 		}
 
-		assertEquals(((TestUser) consumer).getIsSorted(), true);
+		failIfCountDownLatchDoesntGetToZeroWithin(10, TimeUnit.SECONDS, countDownLatch);
+
+		assertTrue(((TestUser) consumer).getIsSorted());
 		verify(consumer, times(numberOfMessages)).newMessage(eq(chat), eq(producer), any());
 	}
 
