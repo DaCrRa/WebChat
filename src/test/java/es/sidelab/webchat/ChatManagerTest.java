@@ -27,17 +27,21 @@ public class ChatManagerTest {
 		ChatManager chatManager = new ChatManager(5);
 
 		// Crear un usuario que guarda en chatName el nombre del nuevo chat
+		CountDownLatch countdownLatch = new CountDownLatch(1);
 		final String[] chatName = new String[1];
 
 		chatManager.newUser(new TestUser("user") {
 			@Override
 			public void newChat(Chat chat) {
 				chatName[0] = chat.getName();
+				countdownLatch.countDown();
 			}
 		});
 
 		// Crear un nuevo chat en el chatManager
 		chatManager.newChat("Chat", 5, TimeUnit.SECONDS);
+
+		failIfCountDownLatchDoesntGetToZeroWithin(1, TimeUnit.SECONDS, countdownLatch);
 
 		// Comprobar que el chat recibido en el método 'newChat' se llama 'Chat'
 		assertTrue("The method 'newChat' should be invoked with 'Chat', but the value is " + chatName[0],

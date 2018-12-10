@@ -32,6 +32,7 @@ public class ChatUserCallbacksTest {
 		manager = new ChatManager(50);
 		aChat = manager.newChat("new chat", 5, TimeUnit.SECONDS);
 		actor = spy(new TestUser("actor"));
+		manager.newUser(actor);
 		aChat.addUser(actor);
 	}
 
@@ -102,7 +103,10 @@ public class ChatUserCallbacksTest {
 		});
 
 		Chat chat = new Chat(this.manager, "New chat");
-		Stream.of(spyUsers).forEach(user -> chat.addUser(user));
+		Stream.of(spyUsers).forEach(user -> {
+			manager.newUser(user);
+			chat.addUser(user);
+		});
 
 		chat.sendMessage(actor, "test");
 
@@ -157,6 +161,8 @@ public class ChatUserCallbacksTest {
 		});
 
 		Chat chat = new Chat(this.manager, "New chat");
+		manager.newUser(producer);
+		manager.newUser(consumer);
 		chat.addUser(producer);
 		chat.addUser(consumer);
 
@@ -248,10 +254,14 @@ public class ChatUserCallbacksTest {
 			});
 		});
 
-		Stream.of(spyUsers).forEach(user -> aChat.addUser(user));
+		Stream.of(spyUsers).forEach(user -> {
+			manager.newUser(user);
+			aChat.addUser(user);
+		});
 
 		// When
 		User newUser = spy(new TestUser("the new user"));
+		manager.newUser(newUser);
 		aChat.addUser(newUser);
 
 		// Then
@@ -283,7 +293,10 @@ public class ChatUserCallbacksTest {
 			});
 		});
 
-		Stream.of(spyUsers).forEach(user -> aChat.addUser(user));
+		Stream.of(spyUsers).forEach(user -> {
+			manager.newUser(user);
+			aChat.addUser(user);
+		});
 
 		// When
 		aChat.removeUser(actor);
@@ -317,7 +330,10 @@ public class ChatUserCallbacksTest {
 			});
 		});
 
-		Stream.of(spyUsers).forEach(user -> aChat.addUser(user));
+		Stream.of(spyUsers).forEach(user -> {
+			manager.newUser(user);
+			aChat.addUser(user);
+		});
 
 		// When
 		try {
@@ -354,7 +370,10 @@ public class ChatUserCallbacksTest {
 			});
 		});
 
-		Stream.of(spyUsers).forEach(user -> aChat.addUser(user));
+		Stream.of(spyUsers).forEach(user -> {
+			manager.newUser(user);
+			aChat.addUser(user);
+		});
 
 		Chat otherChat = manager.newChat("new chat", 5, TimeUnit.SECONDS);
 		Stream.of(spyUsers).forEach(user -> otherChat.addUser(user));
@@ -404,7 +423,10 @@ public class ChatUserCallbacksTest {
 			});
 		});
 
-		Stream.of(spyUsers).forEach(user -> aChat.addUser(user));
+		Stream.of(spyUsers).forEach(user -> {
+			manager.newUser(user);
+			aChat.addUser(user);
+		});
 
 		// When
 		aChat.sendMessage(actor, "message sent to a chat");

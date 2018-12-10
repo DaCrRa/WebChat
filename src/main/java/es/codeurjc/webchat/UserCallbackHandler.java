@@ -34,4 +34,12 @@ public class UserCallbackHandler {
 		executor.submit(() -> handledUser.newMessage(chat, user, message));
 	}
 
+	public void newChat(Chat newChat) {
+		executor.submit(() -> handledUser.newChat(newChat));
+	}
+
+	public void chatClosed(Chat removedChat) {
+		executor.submit(() -> handledUser.chatClosed(removedChat));
+	}
+
 }

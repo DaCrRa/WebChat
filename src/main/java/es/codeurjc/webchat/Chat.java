@@ -25,7 +25,7 @@ public class Chat {
 
 	public void addUser(User user) {
 
-		this.users.put(user.getName(), new UserCallbackHandler(user));
+		this.users.put(user.getName(), chatManager.getUserCallbackHandlerForUser(user));
 		for (UserCallbackHandler handler : this.users.values()) {
 			handler.newUserInChat(this, user);
 		}

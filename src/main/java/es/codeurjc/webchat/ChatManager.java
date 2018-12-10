@@ -6,11 +6,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 public class ChatManager {
 
 	private ConcurrentMap<String, Chat> chats = new ConcurrentHashMap<>();
-	private ConcurrentMap<String, User> users = new ConcurrentHashMap<>();
+	private ConcurrentMap<String, UserCallbackHandler> users = new ConcurrentHashMap<>();
 	private int maxChats;
 
 	public ChatManager(int maxChats) {
@@ -22,7 +23,7 @@ public class ChatManager {
 		if (users.containsKey(user.getName())) {
 			throw new IllegalArgumentException("There is already a user with name \'" + user.getName() + "\'");
 		} else {
-			users.put(user.getName(), user);
+			users.put(user.getName(), new UserCallbackHandler(user));
 		}
 	}
 
@@ -34,8 +35,8 @@ public class ChatManager {
 
 		return chats.computeIfAbsent(name, n -> {
 			Chat newChat = new Chat(this, name);
-			for (User user : users.values()) {
-				user.newChat(newChat);
+			for (UserCallbackHandler handler : users.values()) {
+				handler.newChat(newChat);
 			}
 			return newChat;
 		});
@@ -44,8 +45,8 @@ public class ChatManager {
 	public void closeChat(Chat chat) {
 		Chat removedChat = chats.remove(chat.getName());
 		if (removedChat != null) {
-			for (User user : users.values()) {
-				user.chatClosed(removedChat);
+			for (UserCallbackHandler handler : users.values()) {
+				handler.chatClosed(removedChat);
 			}
 		}
 	}
@@ -59,13 +60,19 @@ public class ChatManager {
 	}
 
 	public Collection<User> getUsers() {
-		return Collections.unmodifiableCollection(users.values());
+		return Collections.unmodifiableCollection(users.values().stream().map(userHandler -> {
+			return userHandler.getHandledUser();
+		}).collect(Collectors.toList()));
 	}
 
 	public User getUser(String userName) {
-		return users.get(userName);
+		return users.get(userName).getHandledUser();
 	}
 
 	public void close() {
+	}
+
+	public UserCallbackHandler getUserCallbackHandlerForUser(User user) {
+		return users.get(user.getName());
 	}
 }
