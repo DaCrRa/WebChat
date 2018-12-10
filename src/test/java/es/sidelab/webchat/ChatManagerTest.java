@@ -1,11 +1,17 @@
 package es.sidelab.webchat;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Objects;
+import java.util.concurrent.CompletionService;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
@@ -18,6 +24,42 @@ public class ChatManagerTest {
 	private void failIfCountDownLatchDoesntGetToZeroWithin(long timeout, TimeUnit unit, CountDownLatch latch)
 			throws InterruptedException {
 		assertTrue("Timed out waiting for threads to do their job", latch.await(timeout, unit));
+	}
+
+	@Test(expected = IllegalArgumentException.class)
+	public void whenRegisteringUserWithSameName_thenIllegalArgumentExceptionThrown() {
+		ChatManager chatManager = new ChatManager(5);
+		chatManager.newUser(new TestUser("name"));
+		chatManager.newUser(new TestUser("name"));
+	}
+
+	@Test
+	public void whenRegisteringUsersWithSameNameConcurrently_thenOnlyOneRegistered()
+			throws InterruptedException, ExecutionException {
+		ChatManager chatManager = new ChatManager(5);
+		AtomicInteger catchedExceptions = new AtomicInteger();
+
+		int numberOfThreads = 10;
+		CompletionService<Void> completionService = new ExecutorCompletionService<>(
+				Executors.newFixedThreadPool(numberOfThreads));
+
+		for (int i = 0; i < numberOfThreads; i++) {
+			completionService.submit(() -> {
+				try {
+					chatManager.newUser(new TestUser("name"));
+				} catch (IllegalArgumentException e) {
+					catchedExceptions.incrementAndGet();
+				}
+				return null;
+			});
+		}
+
+		for (int i = 0; i < numberOfThreads; i++) {
+			completionService.take().get();
+		}
+
+		assertEquals("Expected to catch numberOfThreads - 1 (" + (numberOfThreads - 1) + ") exceptions, got "
+				+ catchedExceptions.get(), numberOfThreads - 1, catchedExceptions.get());
 	}
 
 	@Test

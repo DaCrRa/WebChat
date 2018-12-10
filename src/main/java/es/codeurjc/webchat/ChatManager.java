@@ -20,11 +20,12 @@ public class ChatManager {
 
 	public void newUser(User user) {
 
-		if (users.containsKey(user.getName())) {
-			throw new IllegalArgumentException("There is already a user with name \'" + user.getName() + "\'");
-		} else {
-			users.put(user.getName(), new UserCallbackHandler(user));
-		}
+		users.compute(user.getName(), (name, mappedHandler) -> {
+			if (mappedHandler != null) {
+				throw new IllegalArgumentException("There is already a user with name \'" + user.getName() + "\'");
+			}
+			return new UserCallbackHandler(user);
+		});
 	}
 
 	public Chat newChat(String name, long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
