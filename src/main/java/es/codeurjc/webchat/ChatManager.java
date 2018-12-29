@@ -1,7 +1,10 @@
 package es.codeurjc.webchat;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -12,10 +15,12 @@ public class ChatManager {
 
 	private ConcurrentMap<String, Chat> chats = new ConcurrentHashMap<>();
 	private ConcurrentMap<String, UserCallbackHandler> users = new ConcurrentHashMap<>();
-	private int maxChats;
+	private BlockingQueue<Object> chatTokens;
 
 	public ChatManager(int maxChats) {
-		this.maxChats = maxChats;
+		Object[] tokens = new Object[maxChats];
+		Arrays.parallelSetAll(tokens, i -> new Object());
+		chatTokens = new ArrayBlockingQueue<>(maxChats, false, Arrays.asList(tokens));
 	}
 
 	public void newUser(User user) {
@@ -30,9 +35,7 @@ public class ChatManager {
 
 	public Chat newChat(String name, long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
 
-		if (chats.size() == maxChats) {
-			throw new TimeoutException("There is no enought capacity to create a new chat");
-		}
+		ensureChatCapacity(timeout, unit);
 
 		return chats.computeIfAbsent(name, n -> {
 			Chat newChat = new Chat(this, name);
@@ -43,12 +46,25 @@ public class ChatManager {
 		});
 	}
 
+	private void ensureChatCapacity(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
+		if (chatTokens.poll(timeout, unit) == null) {
+			throw new TimeoutException("Timed out waiting for capacity to create new chat");
+		}
+	}
+
 	public void closeChat(Chat chat) {
-		Chat removedChat = chats.remove(chat.getName());
-		if (removedChat != null) {
+		chats.computeIfPresent(chat.getName(), (chatName, chatToRemove) -> {
 			for (UserCallbackHandler handler : users.values()) {
-				handler.chatClosed(removedChat);
+				handler.chatClosed(chatToRemove);
 			}
+			increaseChatCapacity();
+			return null;
+		});
+	}
+
+	private void increaseChatCapacity() {
+		if (!chatTokens.add(new Object())) {
+			throw new RuntimeException("Failed to add chat capacity");
 		}
 	}
 
